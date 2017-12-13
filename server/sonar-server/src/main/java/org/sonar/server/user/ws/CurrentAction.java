@@ -39,6 +39,7 @@ import org.sonarqube.ws.Users.CurrentWsResponse.Homepage;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.emptyToNull;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.Users.CurrentWsResponse.Permissions;
@@ -97,13 +98,29 @@ public class CurrentAction implements UsersWsAction {
       .addAllGroups(groups)
       .addAllScmAccounts(user.getScmAccountsAsList())
       .setPermissions(Permissions.newBuilder().addAllGlobal(getGlobalPermissions()).build())
-      .setHomepage(Homepage.newBuilder().setType("project").setKey("project-key").build())
+      .setHomepage(defaultHomepage(user))
       .setShowOnboardingTutorial(!user.isOnboarded());
     setNullable(emptyToNull(user.getEmail()), builder::setEmail);
     setNullable(emptyToNull(user.getEmail()), u -> builder.setAvatar(avatarResolver.create(user)));
     setNullable(user.getExternalIdentity(), builder::setExternalIdentity);
     setNullable(user.getExternalIdentityProvider(), builder::setExternalProvider);
     return builder.build();
+  }
+
+  // WIP : SONAR-10185
+  private static Homepage defaultHomepage(UserDto user) {
+
+    if (isNotBlank(user.getHomepageType())) {
+      return Homepage.newBuilder()
+        .setType(user.getHomepageType())
+        .setKey(user.getHomepageKey())
+        .build();
+    }
+
+    return Homepage.newBuilder()
+      .setType("my-projects")
+      .setKey("")
+      .build();
   }
 
   private List<String> getGlobalPermissions() {
