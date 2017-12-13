@@ -51,6 +51,7 @@ public class CurrentAction implements UsersWsAction {
   private final DbClient dbClient;
   private final DefaultOrganizationProvider defaultOrganizationProvider;
   private final AvatarResolver avatarResolver;
+  private final DefaultHomepageFinder defaultHomepageFinder;
 
   public CurrentAction(UserSession userSession, DbClient dbClient, DefaultOrganizationProvider defaultOrganizationProvider, AvatarResolver avatarResolver) {
     this.userSession = userSession;
@@ -98,7 +99,7 @@ public class CurrentAction implements UsersWsAction {
       .addAllGroups(groups)
       .addAllScmAccounts(user.getScmAccountsAsList())
       .setPermissions(Permissions.newBuilder().addAllGlobal(getGlobalPermissions()).build())
-      .setHomepage(defaultHomepage(user))
+      .setHomepage(defaultHomepageFinder.findFor(user))
       .setShowOnboardingTutorial(!user.isOnboarded());
     setNullable(emptyToNull(user.getEmail()), builder::setEmail);
     setNullable(emptyToNull(user.getEmail()), u -> builder.setAvatar(avatarResolver.create(user)));
@@ -107,21 +108,6 @@ public class CurrentAction implements UsersWsAction {
     return builder.build();
   }
 
-  // WIP : SONAR-10185
-  private static Homepage defaultHomepage(UserDto user) {
-
-    if (isNotBlank(user.getHomepageType())) {
-      return Homepage.newBuilder()
-        .setType(user.getHomepageType())
-        .setKey(user.getHomepageKey())
-        .build();
-    }
-
-    return Homepage.newBuilder()
-      .setType("my-projects")
-      .setKey("")
-      .build();
-  }
 
   private List<String> getGlobalPermissions() {
     String defaultOrganizationUuid = defaultOrganizationProvider.get().getUuid();
