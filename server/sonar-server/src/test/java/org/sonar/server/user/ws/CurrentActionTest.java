@@ -65,7 +65,9 @@ public class CurrentActionTest {
       .setExternalIdentity("obiwan")
       .setExternalIdentityProvider("sonarqube")
       .setScmAccounts(newArrayList("obiwan:github", "obiwan:bitbucket"))
-      .setOnboarded(false));
+      .setOnboarded(false)
+      .setHomepageType("project")
+      .setHomepageKey("death-star"));
     userSessionRule.logIn("obiwan.kenobi");
 
     CurrentWsResponse response = call();
@@ -75,6 +77,11 @@ public class CurrentActionTest {
         CurrentWsResponse::getExternalIdentity, CurrentWsResponse::getExternalProvider, CurrentWsResponse::getScmAccountsList, CurrentWsResponse::getShowOnboardingTutorial)
       .containsExactly(true, "obiwan.kenobi", "Obiwan Kenobi", "obiwan.kenobi@starwars.com", "f5aa64437a1821ffe8b563099d506aef", true, "obiwan", "sonarqube",
         newArrayList("obiwan:github", "obiwan:bitbucket"), true);
+
+    assertThat(response.getHomepage()).isNotNull();
+    assertThat(response.getHomepage()).extracting(CurrentWsResponse.Homepage::getType, CurrentWsResponse.Homepage::getKey)
+      .containsExactly("project", "death-star");
+
   }
 
   @Test
@@ -185,7 +192,9 @@ public class CurrentActionTest {
       .setExternalIdentity("obiwan.kenobi")
       .setExternalIdentityProvider("sonarqube")
       .setScmAccounts(newArrayList("obiwan:github", "obiwan:bitbucket"))
-      .setOnboarded(true));
+      .setOnboarded(true)
+      .setHomepageType("project")
+      .setHomepageKey("project-key"));
     db.users().insertMember(db.users().insertGroup(newGroupDto().setName("Jedi")), obiwan);
     db.users().insertMember(db.users().insertGroup(newGroupDto().setName("Rebel")), obiwan);
 

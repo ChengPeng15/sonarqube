@@ -39,6 +39,7 @@ import org.sonarqube.ws.Users.CurrentWsResponse.Homepage;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.emptyToNull;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.Users.CurrentWsResponse.HomepageType.PROJECT;
@@ -51,6 +52,7 @@ public class CurrentAction implements UsersWsAction {
   private final DbClient dbClient;
   private final DefaultOrganizationProvider defaultOrganizationProvider;
   private final AvatarResolver avatarResolver;
+  private final DefaultHomepageFinder defaultHomepageFinder;
 
   public CurrentAction(UserSession userSession, DbClient dbClient, DefaultOrganizationProvider defaultOrganizationProvider, AvatarResolver avatarResolver) {
     this.userSession = userSession;
@@ -98,7 +100,7 @@ public class CurrentAction implements UsersWsAction {
       .addAllGroups(groups)
       .addAllScmAccounts(user.getScmAccountsAsList())
       .setPermissions(Permissions.newBuilder().addAllGlobal(getGlobalPermissions()).build())
-      .setHomepage(Homepage.newBuilder().setType(PROJECT).setValue("project-key").build())
+      .setHomepage(defaultHomepageFinder.findFor(user))
       .setShowOnboardingTutorial(!user.isOnboarded());
     setNullable(emptyToNull(user.getEmail()), builder::setEmail);
     setNullable(emptyToNull(user.getEmail()), u -> builder.setAvatar(avatarResolver.create(user)));
@@ -106,6 +108,7 @@ public class CurrentAction implements UsersWsAction {
     setNullable(user.getExternalIdentityProvider(), builder::setExternalProvider);
     return builder.build();
   }
+
 
   private List<String> getGlobalPermissions() {
     String defaultOrganizationUuid = defaultOrganizationProvider.get().getUuid();
